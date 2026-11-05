@@ -1,0 +1,195 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#17131c">
+<title>ADIL COSMETIC SHOP</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#100e14;color:#f8f5fa;font-family:Arial,sans-serif}
+header{padding:24px 18px;background:linear-gradient(135deg,#30213b,#17131c);border-bottom:1px solid #60436b}
+.brand{color:#e7c48b;font-size:12px;letter-spacing:4px}
+h1{font-size:23px;margin:9px 0 4px}
+.sub{color:#b9aebb;font-size:12px}
+main{padding:16px;max-width:750px;margin:auto}
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.stat,.panel{background:#1d1922;border:1px solid #352b3c;border-radius:13px;padding:15px}
+.stat small{color:#b5a8ba;font-size:12px}
+.stat strong{display:block;font-size:23px;margin-top:10px;color:#e9c78f}
+h2{font-size:17px;margin:24px 0 12px}
+input,button{font:inherit}
+input{width:100%;padding:13px;margin:6px 0;background:#110e15;border:1px solid #44374b;border-radius:9px;color:white;outline:none}
+button{border:0;border-radius:9px;padding:12px 15px;background:#d4ad77;color:#211827;font-weight:bold;cursor:pointer}
+button.secondary{background:#39303e;color:white}
+button.danger{background:#793b46;color:white}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.actions button{flex:1}
+.product{background:#1d1922;border:1px solid #352b3c;padding:14px;border-radius:12px;margin:10px 0}
+.product-top{display:flex;justify-content:space-between;gap:10px}
+.product strong{font-size:15px}
+.muted{font-size:12px;color:#b9aebb;margin-top:7px}
+.price{color:#e9c78f;font-weight:bold}
+.empty{text-align:center;color:#b9aebb;padding:25px}
+#message{color:#e9c78f;font-size:13px;margin-top:10px}
+</style>
+</head>
+<body>
+<header>
+ <div class="brand">PREMIUM BEAUTY STORE</div>
+ <h1>ADIL COSMETIC SHOP</h1>
+ <div class="sub">Smart Inventory Management</div>
+</header>
+
+<main>
+ <div class="stats">
+  <div class="stat"><small>Total Products</small><strong id="total">0</strong></div>
+  <div class="stat"><small>Total Stock Units</small><strong id="stock">0</strong></div>
+  <div class="stat"><small>Stock Value (Cost)</small><strong id="value">₹0</strong></div>
+  <div class="stat"><small>Low Stock Products</small><strong id="low">0</strong></div>
+ </div>
+
+ <h2>Add New Product</h2>
+ <div class="panel">
+  <input id="name" placeholder="Product Name">
+  <input id="category" placeholder="Category (Cream, Facewash, etc.)">
+  <input id="cost" type="number" min="0" placeholder="Purchase Price (₹)">
+  <input id="price" type="number" min="0" placeholder="Selling Price (₹)">
+  <input id="qty" type="number" min="0" placeholder="Opening Stock Quantity">
+  <button style="width:100%" onclick="addProduct()">+ Add Product</button>
+  <div id="message"></div>
+ </div>
+
+ <h2>Product Inventory</h2>
+ <input id="search" placeholder="Search products..." oninput="render()">
+ <div id="products"></div>
+
+ <h2>Backup</h2>
+ <div class="panel">
+  <div class="muted">Export your stock data to keep a backup.</div>
+  <div class="actions">
+   <button onclick="backup()">Export Backup</button>
+   <button class="secondary" onclick="document.getElementById('restore').click()">Import Backup</button>
+  </div>
+  <input type="file" id="restore" accept=".json" style="display:none" onchange="restoreData(event)">
+ </div>
+</main>
+
+<script>
+let items=[];
+try{items=JSON.parse(localStorage.getItem("adilProducts")||"[]")}catch(e){items=[]}
+
+function save(){
+ localStorage.setItem("adilProducts",JSON.stringify(items));
+ render();
+}
+function money(n){return "₹"+Number(n||0).toLocaleString("en-IN")}
+function addProduct(){
+ let name=document.getElementById("name").value.trim();
+ let category=document.getElementById("category").value.trim();
+ let cost=Number(document.getElementById("cost").value);
+ let price=Number(document.getElementById("price").value);
+ let qty=Number(document.getElementById("qty").value);
+ if(!name||!category||document.getElementById("cost").value===""||
+ document.getElementById("price").value===""||document.getElementById("qty").value===""||
+ cost<0||price<0||qty<0){
+  document.getElementById("message").textContent="Please enter valid product details.";
+  return;
+ }
+ items.push({id:Date.now(),name,category,cost,price,qty});
+ save();
+ ["name","category","cost","price","qty"].forEach(id=>document.getElementById(id).value="");
+ document.getElementById("message").textContent="Product added successfully!";
+}
+function sell(id){
+ let p=items.find(x=>x.id===id);
+ let q=prompt("Enter quantity sold:");
+ if(q===null)return;
+ q=Number(q);
+ if(!Number.isInteger(q)||q<=0){alert("Enter a valid quantity.");return}
+ if(q>p.qty){alert("Not enough stock available!");return}
+ p.qty-=q;
+ save();
+}
+function edit(id){
+ let p=items.find(x=>x.id===id);
+ let name=prompt("Product name:",p.name);
+ if(name===null)return;
+ let price=prompt("Selling price:",p.price);
+ if(price===null)return;
+ let qty=prompt("Current stock:",p.qty);
+ if(qty===null)return;
+ if(!name.trim()||!Number.isFinite(Number(price))||Number(price)<0||
+ !Number.isInteger(Number(qty))||Number(qty)<0){
+ alert("Invalid details");return;
+ }
+ p.name=name.trim();p.price=Number(price);p.qty=Number(qty);
+ save();
+}
+function removeProduct(id){
+ if(confirm("Delete this product?")){
+ items=items.filter(x=>x.id!==id);
+ save();
+ }
+}
+function render(){
+ let total=items.length;
+ let stock=items.reduce((a,p)=>a+p.qty,0);
+ let value=items.reduce((a,p)=>a+p.cost*p.qty,0);
+ let low=items.filter(p=>p.qty<=5).length;
+ document.getElementById("total").textContent=total;
+ document.getElementById("stock").textContent=stock;
+ document.getElementById("value").textContent=money(value);
+ document.getElementById("low").textContent=low;
+ let term=document.getElementById("search").value.toLowerCase();
+ let found=items.filter(p=>(p.name+" "+p.category).toLowerCase().includes(term));
+ document.getElementById("products").innerHTML=found.length?found.map(p=>`
+ <div class="product">
+  <div class="product-top">
+   <div><strong>${escapeHTML(p.name)}</strong><div class="muted">${escapeHTML(p.category)}</div></div>
+   <div class="price">${money(p.price)}</div>
+  </div>
+  <div class="muted">Purchase: ${money(p.cost)} | Stock: <b>${p.qty}</b></div>
+  <div class="actions">
+   <button onclick="sell(${p.id})">Sell</button>
+   <button class="secondary" onclick="edit(${p.id})">Edit</button>
+   <button class="danger" onclick="removeProduct(${p.id})">Delete</button>
+  </div>
+ </div>`).join(""):'<div class="empty">No products found. Add your first product!</div>';
+}
+function escapeHTML(s){
+ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function backup(){
+ let blob=new Blob([JSON.stringify(items,null,2)],{type:"application/json"});
+ let a=document.createElement("a");
+ a.href=URL.createObjectURL(blob);
+ a.download="adil-cosmetic-backup.json";
+ a.click();
+ URL.revokeObjectURL(a.href);
+}
+function restoreData(e){
+ let file=e.target.files[0];
+ if(!file)return;
+ let reader=new FileReader();
+ reader.onload=()=>{
+ try{
+ let data=JSON.parse(reader.result);
+ if(!Array.isArray(data)||!data.every(p=>
+ typeof p.name==="string"&&typeof p.category==="string"&&
+ [p.id,p.cost,p.price,p.qty].every(Number.isFinite)&&
+ p.cost>=0&&p.price>=0&&p.qty>=0&&Number.isInteger(p.qty)))
+ throw Error();
+ if(confirm("Replace current inventory with backup?")){
+ items=data;save();alert("Backup restored!");
+ }
+ }catch(err){alert("Invalid backup file!")}
+ e.target.value="";
+ };
+ reader.readAsText(file);
+}
+render();
+</script>
+</body>
+</html>
