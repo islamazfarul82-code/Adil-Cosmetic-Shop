@@ -1,11 +1,25 @@
-
 {
   "name": "ADIL COSMETIC SHOP",
   "short_name": "ADIL SHOP",
   "description": "Premium Offline Stock Management App",
   "start_url": "./index.html",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#100e14",
   "theme_color": "#17131c",
-  "orientation": "portrait"
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "./adil-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./adil-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
 }
